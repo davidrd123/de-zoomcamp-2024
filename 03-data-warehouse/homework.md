@@ -1,14 +1,30 @@
 ## Week 3 Homework
-<b><u>Important Note:</b></u> <p> For this homework we will be using the Green Taxi Trip Record Parquet files from the New York
+ATTENTION: At the end of the submission form, you will be required to include a link to your GitHub repository or other public code-hosting site. This repository should contain your code for solving the homework. If your solution includes code that is not in file format (such as SQL queries or shell commands), please include these directly in the README file of your repository.
+
+<b><u>Important Note:</b></u> <p> For this homework we will be using the 2022 Green Taxi Trip Record Parquet Files from the New York
 City Taxi Data found here: </br> https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page </br>
 If you are using orchestration such as Mage, Airflow or Prefect do not load the data into Big Query using the orchestrator.</br> 
 Stop with loading the files into a bucket. </br></br>
 <u>NOTE:</u> You will need to use the PARQUET option files when creating an External Table</br>
 
 <b>SETUP:</b></br>
-Create an external table using the Green Taxi Trip Records Data for 2022 data. </br>
+Create an external table using the Green Taxi Trip Records Data for 2022. </br>
 Create a table in BQ using the Green Taxi Trip Records for 2022 (do not partition or cluster this table). </br>
 </p>
+
+```sql
+-- Creating external table referring to gcs path
+CREATE OR REPLACE EXTERNAL TABLE `de-zoomcamp-davidrd123.ny_taxi.external_green_tripdata`
+OPTIONS (
+  format = 'PARQUET',
+  uris = ['gs://nyctaxi-zoomcamp-davidrd123/green_taxi_2022/green_tripdata_2022-*.parquet']
+);
+```
+
+```sql
+CREATE OR REPLACE TABLE de-zoomcamp-davidrd123.ny_taxi.green_tripdata_non_partitioned AS
+SELECT * FROM de-zoomcamp-davidrd123.ny_taxi.external_green_tripdata;
+```
 
 ## Question 1:
 Question 1: What is count of records for the 2022 Green Taxi Data??
@@ -16,6 +32,17 @@ Question 1: What is count of records for the 2022 Green Taxi Data??
 - 840,402
 - 1,936,423
 - 253,647
+
+## ANSWER 1:
+```sql
+-- HW Question 1
+-- What is count of records for the 2022 Green Taxi Data??
+
+SELECT COUNT(*) from `de-zoomcamp-davidrd123.ny_taxi.external_green_tripdata`;
+```
+840402
+```
+
 
 ## Question 2:
 Write a query to count the distinct number of PULocationIDs for the entire dataset on both the tables.</br> 
@@ -26,6 +53,11 @@ What is the estimated amount of data that will be read when this query is execut
 - 0 MB for the External Table and 0MB for the Materialized Table
 - 2.14 MB for the External Table and 0MB for the Materialized Table
 
+## ANSWER 2:
+
+```
+- 0 MB for the External Table and 6.41MB for the Materialized Table
+```
 
 ## Question 3:
 How many records have a fare_amount of 0?
@@ -34,12 +66,34 @@ How many records have a fare_amount of 0?
 - 112
 - 1,622
 
+## ANSWER 3:
+
+```
+`1622`
+```
+
 ## Question 4:
-What is the best strategy to make an optimized table in Big Query if your query will always order the results by PUlocationID and filter based on lpep_pickup_datetime?
+What is the best strategy to make an optimized table in Big Query if your query will always order the results by PUlocationID and filter based on lpep_pickup_datetime? (Create a new table with this strategy)
 - Cluster on lpep_pickup_datetime Partition by PUlocationID
 - Partition by lpep_pickup_datetime  Cluster on PUlocationID
 - Partition by lpep_pickup_datetime and Partition by PUlocationID
 - Cluster on by lpep_pickup_datetime and Cluster on PUlocationID
+
+```
+- Partition by lpep_pickup_datetime and Partition by PUlocationID
+```
+```
+EXPLANATION:
+
+When optimizing a BigQuery table for queries that frequently filter on a specific column and order by another, you should consider both partitioning and clustering:
+- *Partitioning* divides your table into segments, called partitions, which can make queries more efficient by limiting the amount of data that is scanned.
+- *Clustering* sorts the data within each partition based on the values in one or more columns, which can further improve query performance by reducing the amount of data that must be read.
+
+Given that your queries will always filter based on lpep_pickup_datetime and order the results by PUlocationID, the most effective strategy would be to:
+- Partition by lpep_pickup_datetime: This is because filtering on this column will allow BigQuery to scan only the relevant partitions, which can greatly reduce the amount of data read and thus the cost and time of the query.
+- Cluster by PUlocationID: Clustering by this column will organize the data within each partition, making the ordering operation more efficient.
+```
+
 
 ## Question 5:
 Write a query to retrieve the distinct PULocationID between lpep_pickup_datetime
@@ -48,11 +102,17 @@ Write a query to retrieve the distinct PULocationID between lpep_pickup_datetime
 Use the materialized table you created earlier in your from clause and note the estimated bytes. Now change the table in the from clause to the partitioned table you created for question 4 and note the estimated bytes processed. What are these values? </br>
 
 Choose the answer which most closely matches.</br> 
-Use the BQ table you created earlier in your from clause and note the estimated bytes. Now change the table in the from clause to the partitioned table you created for question 4 and note the estimated bytes processed. What are these values? Choose the answer which most closely matches.
+
 - 22.82 MB for non-partitioned table and 647.87 MB for the partitioned table
 - 12.82 MB for non-partitioned table and 1.12 MB for the partitioned table
 - 5.63 MB for non-partitioned table and 0 MB for the partitioned table
 - 10.31 MB for non-partitioned table and 10.31 MB for the partitioned table
+
+## Answer 5:
+
+```
+- 12.82 MB for non-partitioned table and 1.12 MB for the partitioned table
+```
 
 
 ## Question 6: 
@@ -63,24 +123,27 @@ Where is the data stored in the External Table you created?
 - Big Table
 - Container Registry
 
+```
+GCP Bucket
+```
+
 
 ## Question 7:
 It is best practice in Big Query to always cluster your data:
 - True
 - False
 
+```
+False
+```
+
 
 ## (Bonus: Not worth points) Question 8:
-No Points: Write a SELECT count(*) query FROM the materialized table you created. How many bytes does it estimate will be read? Why?
+No Points: Write a `SELECT count(*)` query FROM the materialized table you created. How many bytes does it estimate will be read? Why?
 
-
-Note: Column types for all files used in an External Table must have the same datatype. While an External Table may be created and shown in the side panel in Big Query, this will need to be validated by running a count query on the External Table to check if any errors occur. 
  
 ## Submitting the solutions
 
-* Form for submitting: TBD
-* You can submit your homework multiple times. In this case, only the last submission will be used. 
-
-Deadline: TBD
+* Form for submitting: https://courses.datatalks.club/de-zoomcamp-2024/homework/hw3
 
 
