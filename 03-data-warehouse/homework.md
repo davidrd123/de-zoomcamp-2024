@@ -40,6 +40,8 @@ Question 1: What is count of records for the 2022 Green Taxi Data??
 
 SELECT COUNT(*) from `de-zoomcamp-davidrd123.ny_taxi.external_green_tripdata`;
 ```
+
+```
 840402
 ```
 
@@ -68,7 +70,7 @@ How many records have a fare_amount of 0?
 
 ## ANSWER 3:
 
-```
+```txt
 `1622`
 ```
 
@@ -79,11 +81,12 @@ What is the best strategy to make an optimized table in Big Query if your query 
 - Partition by lpep_pickup_datetime and Partition by PUlocationID
 - Cluster on by lpep_pickup_datetime and Cluster on PUlocationID
 
-```
+```txt
 - Partition by lpep_pickup_datetime and Partition by PUlocationID
 ```
-```
-EXPLANATION:
+
+```md
+### EXPLANATION:
 
 When optimizing a BigQuery table for queries that frequently filter on a specific column and order by another, you should consider both partitioning and clustering:
 - *Partitioning* divides your table into segments, called partitions, which can make queries more efficient by limiting the amount of data that is scanned.
